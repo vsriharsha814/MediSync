@@ -33,6 +33,7 @@ interface SessionData {
 }
 
 const STORAGE_KEY = "medisync_sessions";
+const SELECTED_INDEX_KEY = "medisync_selected_index";
 
 export default function Home() {
   const [sessions, setSessions] = useState<SessionData[]>([]);
@@ -43,15 +44,25 @@ export default function Home() {
   const [gptResponseLive, setGptResponseLive] = useState("");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved) {
+    const savedSessions = window.localStorage.getItem(STORAGE_KEY);
+    const savedIndex = window.localStorage.getItem(SELECTED_INDEX_KEY);
+
+    if (savedSessions) {
       try {
-        const parsed = JSON.parse(saved);
+        const parsed = JSON.parse(savedSessions);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setSessions(parsed);
+          if (savedIndex !== null) {
+            const parsedIndex = parseInt(savedIndex, 10);
+            if (!Number.isNaN(parsedIndex) && parsedIndex >= 0 && parsedIndex < parsed.length) {
+              setSelectedSessionIndex(parsedIndex);
+              return;
+            }
+          }
           setSelectedSessionIndex(0);
         } else {
-          createNewSession();
+        // fresh one
+        createNewSession();
         }
       } catch {
         createNewSession();
@@ -64,6 +75,12 @@ export default function Home() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
   }, [sessions]);
+
+  useEffect(() => {
+    if (selectedSessionIndex !== null) {
+      window.localStorage.setItem(SELECTED_INDEX_KEY, selectedSessionIndex.toString());
+    }
+  }, [selectedSessionIndex]);
 
   const createNewSession = () => {
     setSessions((prev) => {
@@ -93,9 +110,20 @@ export default function Home() {
     setSessions((prev) => {
       const updated = [...prev];
       updated.splice(index, 1);
+        
+      if (index === selectedSessionIndex) {
+        if (updated.length > 0) {
+          const newIdx = Math.min(index, updated.length - 1);
+          setSelectedSessionIndex(newIdx);
+        } else {
+          setSelectedSessionIndex(null);
+        }
+      } else if (selectedSessionIndex !== null && index < selectedSessionIndex) {
+        setSelectedSessionIndex(selectedSessionIndex - 1);
+      }
+
       return updated;
     });
-    setSelectedSessionIndex(null);
   };
 
   const handleFileSelect = (newFile: File) => {
@@ -116,7 +144,7 @@ export default function Home() {
         braveResult = await braveResp.json();
       }
     } catch {
-        console.log("brave fetch errors")
+      // ignore brave fetch errors
     }
 
     let finalContent = "";
@@ -163,7 +191,6 @@ export default function Home() {
     });
   };
 
-// Getting current session
   const currentSession =
     selectedSessionIndex !== null && sessions[selectedSessionIndex]
       ? sessions[selectedSessionIndex]
@@ -222,9 +249,8 @@ export default function Home() {
 }
 
 function ShowBraveResults({ data }: { data?: BraveResponse | null }) {
-  if (!data) {
-    return null;
-  }
+  if (!data) return null;
+
   return (
     <div className="mt-6 p-4 rounded bg-[#4F4557] text-sm">
       <h2 className="font-semibold mb-2">Brave Search Results</h2>
@@ -233,7 +259,7 @@ function ShowBraveResults({ data }: { data?: BraveResponse | null }) {
       ) : (
         <div className="text-[#ffffff]">
           {data.web && data.web.results && Array.isArray(data.web.results) ? (
-            data.web.results.slice(0, 6).map((item, idx) => (
+            data.web.results.slice(0, 3).map((item, idx) => (
               <div key={idx} className="mb-2">
                 <a
                   href={item.url}
