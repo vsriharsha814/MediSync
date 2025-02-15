@@ -41,7 +41,7 @@ def extract_text_from_docx(docx_path):
 
 # Function to split text into chunks
 def chunk_text(text):
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=550, chunk_overlap=100)
     return splitter.split_text(text)
 
 # Function to get AI embeddings
