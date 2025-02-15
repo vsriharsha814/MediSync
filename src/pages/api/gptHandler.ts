@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { PorterStemmer } from 'natural';
+import CryptoJS from "crypto-js";
 
 // Constants
 const BASE_URL = "https://api.openai.com/v1/chat/completions";
@@ -63,8 +64,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: "Missing OpenAI API Key." });
     }
 
+    // Decrypt the queries
+    const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY;
+    if (!secretKey) {
+      return res.status(500).json({ error: "Missing secret key" });
+    }
+
+    const decryptedQueries = queries.map((encryptedQuery) => {
+      const bytes = CryptoJS.AES.decrypt(encryptedQuery, secretKey);
+      return bytes.toString(CryptoJS.enc.Utf8);
+    });
+    
     // Optimize the queries to reduce token count
-    const optimizedQueries = optimizeQueries(queries);
+    const optimizedQueries = optimizeQueries(decryptedQueries);
 
     // Combine the system prompt with optimized user queries
     const combinedQuery = `${SYSTEM_PROMPT}\n${optimizedQueries.join("\n")}`;

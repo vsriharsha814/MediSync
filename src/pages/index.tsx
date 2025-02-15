@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import Sidebar from "@/components/Sidebar";
 import FileUpload from "@/components/FileUpload";
 import PromptInput from "@/components/PromptInput";
+import CryptoJS from "crypto-js";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -104,7 +105,19 @@ export default function Home() {
   };
 
   const handlePromptSubmit = async () => {
+
+    const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY;
+    if (!secretKey) {
+      console.error("Missing secret key");
+      return;
+    }
+  
+    const encryptedPrompt = CryptoJS.AES.encrypt(prompt, secretKey).toString();
+
+    
     let braveResult: BraveResponse | null = null;
+
+
     try {
       const braveResp = await fetch(`/api/brave?q=${encodeURIComponent(prompt)}`);
       if (braveResp.ok) {
@@ -113,10 +126,12 @@ export default function Home() {
     } catch {}
     let finalContent = "";
     setGptResponseLive("");
+    
+
     const gptResp = await fetch("/api/gptHandler", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ queries: [prompt] }),
+      body: JSON.stringify({ queries: [encryptedPrompt] }),
     });
     if (gptResp.ok) {
       const reader = gptResp.body?.getReader();

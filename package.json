@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@types/formidable": "^3.4.5",
+    "crypto-browserify": "^3.12.1",
+    "crypto-js": "^4.2.0",
     "formidable": "^3.5.2",
     "natural": "^8.0.1",
     "next": "15.1.7",
