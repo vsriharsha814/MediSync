@@ -1,114 +1,234 @@
-import Image from "next/image";
+import { useState, useEffect } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import ReactMarkdown from "react-markdown";
+import Sidebar from "@/components/Sidebar";
+import FileUpload from "@/components/FileUpload";
+import PromptInput from "@/components/PromptInput";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
-
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
+interface BraveWebResult {
+  title: string;
+  url: string;
+  description: string;
+}
+
+interface BraveResponse {
+  web?: { results?: BraveWebResult[] };
+  error?: string;
+}
+
+interface SessionData {
+  fileName: string;
+  prompt: string;
+  gptResponse: string;
+  braveResult: BraveResponse | null;
+}
+
+const STORAGE_KEY = "medisync_sessions";
+
 export default function Home() {
+  const [sessions, setSessions] = useState<SessionData[]>([]);
+  const [selectedSessionIndex, setSelectedSessionIndex] = useState<number | null>(null);
+  const [, setFile] = useState<File | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [gptResponseLive, setGptResponseLive] = useState("");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSessions(parsed);
+          setSelectedSessionIndex(0);
+        } else {
+          createNewSession();
+        }
+      } catch {
+        createNewSession();
+      }
+    } else {
+      createNewSession();
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+  }, [sessions]);
+
+  const createNewSession = () => {
+    setSessions((prev) => {
+      const newSession: SessionData = {
+        fileName: "",
+        prompt: "",
+        gptResponse: "",
+        braveResult: null,
+      };
+      const updated = [...prev, newSession];
+      const newIndex = updated.length === 1 ? 0 : updated.length - 1;
+      setSelectedSessionIndex(newIndex);
+      setFile(null);
+      setFileName("");
+      setPrompt("");
+      setGptResponseLive("");
+      return updated;
+    });
+  };
+
+  const handleSessionSelect = (index: number) => {
+    setSelectedSessionIndex(index);
+    setGptResponseLive("");
+  };
+
+  const handleDeleteSession = (index: number) => {
+    setSessions((prev) => {
+      const updated = [...prev];
+      updated.splice(index, 1);
+      return updated;
+    });
+    setSelectedSessionIndex(null);
+  };
+
+  const handleFileSelect = (newFile: File) => {
+    setFile(newFile);
+    setFileName(newFile.name);
+  };
+
+  const handlePromptSubmit = async () => {
+    let braveResult: BraveResponse | null = null;
+    try {
+      const braveResp = await fetch(`/api/brave?q=${encodeURIComponent(prompt)}`);
+      if (braveResp.ok) {
+        braveResult = await braveResp.json();
+      }
+    } catch {}
+    let finalContent = "";
+    setGptResponseLive("");
+    const gptResp = await fetch("/api/gptHandler", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ queries: [prompt] }),
+    });
+    if (gptResp.ok) {
+      const reader = gptResp.body?.getReader();
+      const decoder = new TextDecoder();
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line.startsWith("data: ")) {
+              const dataPart = line.replace("data: ", "");
+              if (dataPart !== "[DONE]") {
+                finalContent += dataPart;
+                setGptResponseLive((prev) => prev + dataPart);
+              }
+            }
+          }
+        }
+      }
+    }
+    const newSession: SessionData = {
+      fileName: fileName || "No file",
+      prompt,
+      gptResponse: finalContent,
+      braveResult,
+    };
+    setSessions((prev) => [...prev, newSession]);
+  };
+
+  const currentSession =
+    selectedSessionIndex !== null && sessions[selectedSessionIndex]
+      ? sessions[selectedSessionIndex]
+      : null;
+
   return (
     <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
+      className={`${geistSans.variable} ${geistMono.variable}
+      min-h-screen flex flex-col sm:flex-row bg-[#393646] text-[#ffffff]`}
     >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+      <div className="sm:h-screen sm:sticky top-0">
+        <Sidebar
+          sessions={sessions}
+          onSessionSelect={handleSessionSelect}
+          onDeleteSession={handleDeleteSession}
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </div>
+      <main className="flex-1 p-4 sm:p-8">
+        <header className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">MediSync</h1>
+            <p className="text-sm text-[#6D5D6E]">
+              A medical web platform to streamline your workflow
+            </p>
+          </div>
+          <button
+            onClick={createNewSession}
+            className="px-4 py-2 bg-[#6D5D6E] text-[#ffffff] rounded hover:bg-[#4F4557] transition-colors text-sm"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            +
+          </button>
+        </header>
+        <FileUpload onFileSelect={handleFileSelect} fileName={fileName} />
+        <PromptInput prompt={prompt} setPrompt={setPrompt} onSubmit={handlePromptSubmit} />
+        <div className="mt-6 p-4 rounded bg-[#4F4557] text-sm">
+          <h2 className="font-semibold mb-2">GPT Response</h2>
+          {gptResponseLive ? (
+            <ReactMarkdown className="prose prose-invert max-w-none">
+              {gptResponseLive}
+            </ReactMarkdown>
+          ) : (
+            <span className="text-[#6D5D6E]">No response yet.</span>
+          )}
         </div>
+        {currentSession && <ShowBraveResults data={currentSession.braveResult} />}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+    </div>
+  );
+}
+
+function ShowBraveResults({ data }: { data?: BraveResponse | null }) {
+  if (!data) {
+    return null;
+  }
+  return (
+    <div className="mt-6 p-4 rounded bg-[#4F4557] text-sm">
+      <h2 className="font-semibold mb-2">Brave Search Results</h2>
+      {data.error ? (
+        <p className="text-red-300">Error: {data.error}</p>
+      ) : (
+        <div className="text-[#ffffff]">
+          {data.web && data.web.results && Array.isArray(data.web.results) ? (
+            data.web.results.slice(0, 3).map((item, idx) => (
+              <div key={idx} className="mb-2">
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-300 underline"
+                >
+                  {item.title}
+                </a>
+                <p className="text-xs text-[#6D5D6E]">{item.description}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-[#6D5D6E] text-xs">No web results found in Brave response</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
