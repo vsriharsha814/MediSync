@@ -74,7 +74,7 @@ export default function Home() {
         braveResult: null,
       };
       const updated = [...prev, newSession];
-      const newIndex = updated.length === 1 ? 0 : updated.length - 1;
+      const newIndex = updated.length - 1;
       setSelectedSessionIndex(newIndex);
       setFile(null);
       setFileName("");
@@ -104,13 +104,21 @@ export default function Home() {
   };
 
   const handlePromptSubmit = async () => {
+    if (selectedSessionIndex === null) {
+      createNewSession();
+      return;
+    }
+
     let braveResult: BraveResponse | null = null;
     try {
       const braveResp = await fetch(`/api/brave?q=${encodeURIComponent(prompt)}`);
       if (braveResp.ok) {
         braveResult = await braveResp.json();
       }
-    } catch {}
+    } catch {
+        console.log("brave fetch errors")
+    }
+
     let finalContent = "";
     setGptResponseLive("");
     const gptResp = await fetch("/api/gptHandler", {
@@ -140,15 +148,22 @@ export default function Home() {
         }
       }
     }
-    const newSession: SessionData = {
-      fileName: fileName || "No file",
-      prompt,
-      gptResponse: finalContent,
-      braveResult,
-    };
-    setSessions((prev) => [...prev, newSession]);
+
+    setSessions((prev) => {
+      const updated = [...prev];
+      const currentSession = updated[selectedSessionIndex];
+      updated[selectedSessionIndex] = {
+        ...currentSession,
+        fileName: fileName || currentSession.fileName,
+        prompt,
+        gptResponse: finalContent,
+        braveResult,
+      };
+      return updated;
+    });
   };
 
+// Getting current session
   const currentSession =
     selectedSessionIndex !== null && sessions[selectedSessionIndex]
       ? sessions[selectedSessionIndex]
@@ -183,16 +198,23 @@ export default function Home() {
         </header>
         <FileUpload onFileSelect={handleFileSelect} fileName={fileName} />
         <PromptInput prompt={prompt} setPrompt={setPrompt} onSubmit={handlePromptSubmit} />
+
         <div className="mt-6 p-4 rounded bg-[#4F4557] text-sm">
           <h2 className="font-semibold mb-2">GPT Response</h2>
           {gptResponseLive ? (
             <ReactMarkdown className="prose prose-invert max-w-none">
               {gptResponseLive}
             </ReactMarkdown>
+          ) : currentSession && currentSession.gptResponse ? (
+            // If there's no "live" streaming content, show the saved GPT response
+            <ReactMarkdown className="prose prose-invert max-w-none">
+              {currentSession.gptResponse}
+            </ReactMarkdown>
           ) : (
             <span className="text-[#6D5D6E]">No response yet.</span>
           )}
         </div>
+
         {currentSession && <ShowBraveResults data={currentSession.braveResult} />}
       </main>
     </div>
@@ -211,7 +233,7 @@ function ShowBraveResults({ data }: { data?: BraveResponse | null }) {
       ) : (
         <div className="text-[#ffffff]">
           {data.web && data.web.results && Array.isArray(data.web.results) ? (
-            data.web.results.slice(0, 3).map((item, idx) => (
+            data.web.results.slice(0, 6).map((item, idx) => (
               <div key={idx} className="mb-2">
                 <a
                   href={item.url}
