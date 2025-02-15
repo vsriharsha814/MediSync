@@ -9,7 +9,12 @@ const SYSTEM_PROMPT =
   "You are a specialized medical research expert. Provide in-depth, accurate medical answers in clear markdown with bullet points, headings, etc.";
 
 // List of stop words
-const stopWords = ["the", "is", "in", "at", "of", "a", "and", "to", "with", "for", "on", "by", "an", "be", "this", "that", "it", "as", "from", "or", "which", "but", "not", "are", "was", "were", "has", "have", "had", "will", "would", "can", "could", "should", "may", "might", "must", "shall"];
+const stopWords = [
+  "the", "is", "in", "at", "of", "a", "and", "to", "with", "for", "on",
+  "by", "an", "be", "this", "that", "it", "as", "from", "or", "which",
+  "but", "not", "are", "was", "were", "has", "have", "had", "will",
+  "would", "can", "could", "should", "may", "might", "must", "shall"
+];
 
 // Synonym dictionary
 const synonyms: { [key: string]: string } = {
@@ -23,7 +28,6 @@ const synonyms: { [key: string]: string } = {
   "bullet points": "bullets",
   "headings": "titles"
 };
-
 
 function optimizeQueries(queries: string[]): string[] {
   return queries.map(query => {
@@ -40,7 +44,7 @@ function optimizeQueries(queries: string[]): string[] {
       .map(word => synonyms[word.toLowerCase()] || word)
       .join(' ');
 
-    // TODO Apply stemming
+    // TODO: Apply stemming if you want, e.g., PorterStemmer.stem(word)
 
     return optimizedQuery;
   });
@@ -48,18 +52,15 @@ function optimizeQueries(queries: string[]): string[] {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Check if the request method is POST
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method Not Allowed" });
     }
 
-    // Extract queries from the request body
     const { queries } = req.body as { queries?: string[] };
     if (!queries || !Array.isArray(queries) || queries.length === 0) {
       return res.status(400).json({ error: "Queries must be a non-empty array." });
     }
 
-    // Check if the API key is available
     if (!API_KEY) {
       return res.status(500).json({ error: "Missing OpenAI API Key." });
     }
@@ -78,10 +79,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Optimize the queries to reduce token count
     const optimizedQueries = optimizeQueries(decryptedQueries);
 
-    // Combine the system prompt with optimized user queries
     const combinedQuery = `${SYSTEM_PROMPT}\n${optimizedQueries.join("\n")}`;
 
-    // Make a request to the OpenAI API
     const response = await fetch(BASE_URL, {
       method: "POST",
       headers: {
@@ -97,31 +96,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }),
     });
 
-    // Handle non-OK responses from the OpenAI API
     if (!response.ok) {
       return res.status(response.status).json({
         error: `OpenAI API Error: ${response.statusText}`,
       });
     }
 
-    // Set up the response headers for Server-Sent Events (SSE)
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
     });
 
-    // Read the response stream from the OpenAI API
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
 
-    // Handle the case where no reader is available
     if (!reader) {
       return res.status(500).json({ error: "No reader from OpenAI API response." });
     }
 
-    // Process the response stream
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -146,13 +140,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (contentChunk) {
             res.write(`data: ${contentChunk}\n\n`);
           }
-        } catch {}
+        } catch {
+          // parse error, ignore it haha
+        }
       }
-
       buffer = lines[lines.length - 1];
     }
 
-    // Signal the end of the response stream
     res.write("event: done\ndata: [DONE]\n\n");
     res.end();
   } catch {
