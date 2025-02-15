@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 import openai
 import PyPDF2
 from docx import Document
+import shutil
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -62,9 +63,18 @@ def upload_file():
     if file_ext not in [".pdf", ".docx"]:
         return jsonify({"error": "Unsupported file type"}), 400
 
+    if os.path.exists(app.config["UPLOAD_FOLDER"]):
+        shutil.rmtree(app.config["UPLOAD_FOLDER"])
+        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
     # Save file
     file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
     file.save(file_path)
+
+    global index, stored_chunks, doc_metadata
+    index = faiss.IndexFlatL2(1536)
+    stored_chunks = []
+    doc_metadata = {}
 
     # Extract text
     if file_ext == ".pdf":
