@@ -37,6 +37,7 @@ export default function Home() {
     const [fileName, setFileName] = useState("");
     const [prompt, setPrompt] = useState("");
     const [gptResponseLive, setGptResponseLive] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const savedSessions = window.localStorage.getItem(STORAGE_KEY);
@@ -122,7 +123,6 @@ export default function Home() {
         setFileName(newFile.name);
         const formData = new FormData();
         formData.append("file", newFile);
-
         fetch("/api/pdfUpload", {
             method: "POST",
             body: formData,
@@ -141,50 +141,40 @@ export default function Home() {
             createNewSession();
             return;
         }
-
         const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY;
         if (!secretKey) {
-          console.error("Missing secret key");
-          return;
+            console.error("Missing secret key");
+            return;
         }
-      
+        setIsLoading(true);
         const encryptedPrompt = CryptoJS.AES.encrypt(prompt, secretKey).toString();
-
         let braveResult: BraveResponse | null = null;
         try {
-            const braveResp = await fetch(`/api/brave?q=${encodeURIComponent(encryptedPrompt)}`);
+            const braveResp = await fetch(`/api/brave?q=${encodeURIComponent(prompt)}`);
             if (braveResp.ok) {
                 braveResult = await braveResp.json();
             }
         } catch { }
-
         let finalContent = "";
         setGptResponseLive("");
-
         const gptResp = await fetch("/api/gptHandler", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ queries: [encryptedPrompt] }),
         });
-
         if (gptResp.ok) {
             const reader = gptResp.body?.getReader();
             const decoder = new TextDecoder();
-
             if (reader) {
                 let buffer = "";
-
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
-
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split("\n");
-
                     for (let i = 0; i < lines.length - 1; i++) {
                         const line = lines[i].trim();
                         if (!line.startsWith("data: ")) continue;
-
                         let dataPart = line.replace("data: ", "");
                         if (dataPart === "[DONE]") break;
                         if (dataPart.startsWith("#")) {
@@ -194,16 +184,13 @@ export default function Home() {
                         } else if (dataPart.endsWith(".")) {
                             dataPart += "\n";
                         }
-
                         finalContent += dataPart;
                         setGptResponseLive((prev) => prev + dataPart);
                     }
-
                     buffer = lines[lines.length - 1];
                 }
             }
         }
-
         setSessions((prev) => {
             const updated = [...prev];
             const currentSession = updated[selectedSessionIndex];
@@ -216,6 +203,7 @@ export default function Home() {
             };
             return updated;
         });
+        setIsLoading(false);
     };
 
     const currentSession =
@@ -225,10 +213,18 @@ export default function Home() {
 
     return (
         <div className={`${geistSans.variable} ${geistMono.variable} min-h-screen flex flex-col sm:flex-row bg-[#393646] text-[#ffffff]`}>
-            <div className="sm:h-screen sm:sticky top-0">
+            {isLoading && (
+                <div className="fixed inset-0 flex items-center justify-center bg-[#393646] text-white z-50">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            )}
+            <div className={`sm:h-screen sm:sticky top-0 ${isLoading ? "opacity-25 pointer-events-none" : ""}`}>
                 <Sidebar sessions={sessions} onSessionSelect={handleSessionSelect} onDeleteSession={handleDeleteSession} />
             </div>
-            <main className="flex-1 p-4 sm:p-8">
+            <main className={`flex-1 p-4 sm:p-8 ${isLoading ? "opacity-25 pointer-events-none" : ""}`}>
                 <header className="mb-6 flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold">MediSync</h1>
@@ -238,12 +234,10 @@ export default function Home() {
                 </header>
                 <FileUpload onFileSelect={handleFileSelect} fileName={fileName} />
                 <PromptInput prompt={prompt} setPrompt={setPrompt} onSubmit={handlePromptSubmit} />
-
                 <div className="mt-4 p-2 rounded bg-[#4F4557] text-sm">
                     <h2 className="font-semibold mb-2">GPT Response</h2>
                     <div className="prose prose-lg prose-white whitespace-pre-wrap max-w-full leading-5" dangerouslySetInnerHTML={{ __html: marked(gptResponseLive || currentSession?.gptResponse || "No response yet.") }} />
                 </div>
-
                 {currentSession && <ShowBraveResults data={currentSession.braveResult} />}
             </main>
         </div>
