@@ -35,14 +35,11 @@ export default function FileUpload({ onFileSelect, fileName }: FileUploadProps) 
             },
         });
 
-        console.log("✅ Reached before parsing response");
-
         if (!response.ok) {
             throw new Error(`HTTP Error! Status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log("✅ Reached after upload", data);
 
         setMessage(`✅ Success: ${data.message}`);
     } catch (error) {

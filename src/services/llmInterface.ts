@@ -85,7 +85,27 @@ export default class LLMInterface {
   }
 
   async send(optimizedQueries: string[]) {
-    const combinedQuery = `${this.SYSTEM_PROMPT}\n${optimizedQueries.join("\n")}`;
+    const searchResponse = await fetch("http://127.0.0.1:5001/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: optimizedQueries.join(" ") }), // Sending all queries as one search
+    });
+
+    if (!searchResponse.ok) {
+      return this.res.status(searchResponse.status).json({
+        error: `Search API Error: ${searchResponse.statusText}`,
+      });
+    }
+
+    const searchData = await searchResponse.json();
+    const searchResults = searchData.results || [];
+
+    console.log("🔍 Search results received:", searchResults);
+
+    const combinedQuery = `${this.SYSTEM_PROMPT}\n${optimizedQueries.join("\n")}\n\nSearch Context:\n${searchResults.join("\n")}`;
+
+    console.log("📡 Sending combined query to OpenAI:", combinedQuery);
+
     const response = await fetch(this.BASE_URL, {
       method: "POST",
       headers: {
