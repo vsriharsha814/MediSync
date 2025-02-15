@@ -120,6 +120,20 @@ export default function Home() {
     const handleFileSelect = (newFile: File) => {
         setFile(newFile);
         setFileName(newFile.name);
+        const formData = new FormData();
+        formData.append("file", newFile);
+
+        fetch("/api/pdfUpload", {
+            method: "POST",
+            body: formData,
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log("File uploaded successfully:", data);
+            })
+            .catch((error) => {
+                console.error("Error uploading file:", error);
+            });
     };
 
     const handlePromptSubmit = async () => {
