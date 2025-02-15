@@ -10,21 +10,26 @@
     "prisma:studio": "npx prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^6.3.1",
-    "bcrypt": "^5.1.1",
+    "@types/formidable": "^3.4.5",
+    "crypto-browserify": "^3.12.1",
+    "crypto-js": "^4.2.0",
+    "formidable": "^3.5.2",
+    "marked": "^15.0.7",
+    "natural": "^8.0.1",
     "next": "15.1.7",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tesseract.js": "^4.1.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/tesseract.js": "^2.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
     "postcss": "^8",
-    "prisma": "^6.3.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }
