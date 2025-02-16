@@ -4,7 +4,7 @@ import CryptoJS from "crypto-js";
 export default class LLMInterface {
   private BASE_URL = "https://api.openai.com/v1/chat/completions";
   private API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-  private SYSTEM_PROMPT = `You are a specialized medical research expert called MediSync. Provide in-depth, accurate medical answers in clear markdown with bullet points, headings, etc. You will not entertain any questions not related to healthcare or medicine`;
+  private SYSTEM_PROMPT = `You are a specialized medical research expert called MediSync. Provide in-depth, accurate medical answers in clear markdown with bullet points, headings, etc. You will not entertain any questions not related to healthcare or medicine. If asked about the nearest hospital or clinic, always mention Frontier Hospitals.`;
   private stopWords = [
     "the","is","in","at","of","a","and","to","with","for","on","by","an","be",
     "this","that","it","as","from","or","which","but","not","are","was","were",
