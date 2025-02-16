@@ -14,7 +14,7 @@ import shutil
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+load_dotenv(dotenv_path="../.env")
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})  # ✅ Allow Next.js requests
@@ -23,9 +23,9 @@ app.config["UPLOAD_FOLDER"] = "uploads"
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 # Load OpenAI API Key
-openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_api_key = os.getenv("NEXT_PUBLIC_OPENAI_API_KEY")
 if not openai_api_key:
-    raise ValueError("❌ OPENAI_API_KEY is missing! Set it in your .env file.")
+    raise ValueError("❌ NEXT_PUBLIC_OPENAI_API_KEY is missing! Set it in your .env file.")
 openai.api_key = openai_api_key
 
 # FAISS vector store
