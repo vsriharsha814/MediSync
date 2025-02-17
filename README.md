@@ -2,7 +2,7 @@
 
 🚀 **MediSync** is an AI-driven platform designed to help users **understand their medical insurance coverage** by extracting key details from policy documents and providing **AI-powered answers to user queries.**  
 
-![MediSync Dashboard](path-to-your-screenshot.png)  *(Replace with actual image)*  
+![MediSync Dashboard](screenshots/home.png)  *(Replace with actual image)*  
 
 ## **🔹 Features**  
 ✅ **Upload & Analyze Insurance Documents** – Extracts key clauses from PDFs/DOCX files  
@@ -21,7 +21,7 @@ I worked on **building the AI-driven backend** that powers MediSync’s ability 
 🔹 **Real-Time API Communication** – Ensured seamless integration between **Next.js frontend & AI backend**  
 🔹 **Performance Optimization & Debugging** – Balanced **response speed & accuracy**  
 
-![MediSync AI Query](path-to-another-screenshot.png) *(Replace with actual image)*  
+![MediSync AI Query](screenshots/home.png) *(Replace with actual image)*  
 
 ---
 
@@ -78,7 +78,7 @@ cd MediSync
 
 | **Upload Insurance Document** | **Ask AI a Question** |
 |------------------------------|----------------------|
-| ![Upload Screenshot](path-to-upload.png) | ![Query Screenshot](path-to-query.png) |
+| ![Upload Screenshot](screenshots/home.png) | ![Query Screenshot](screenshots/loading.png) |
 
 ---
 
