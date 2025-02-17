@@ -1,40 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# **MediSync - AI-Powered Medical Insurance Assistant**  
 
-## Getting Started
+🚀 **MediSync** is an AI-driven platform designed to help users **understand their medical insurance coverage** by extracting key details from policy documents and providing **AI-powered answers to user queries.**  
 
-First, run the development server:
+![MediSync Dashboard](path-to-your-screenshot.png)  *(Replace with actual image)*  
 
-```bash
+## **🔹 Features**  
+✅ **Upload & Analyze Insurance Documents** – Extracts key clauses from PDFs/DOCX files  
+✅ **AI-Powered Query Processing** – Ask natural language questions about your coverage  
+✅ **FAISS Vector Search** – Enables **instant retrieval** of relevant policy information  
+✅ **Real-Time API Communication** – Ensures **fast and responsive** query handling  
+
+---
+
+## **🔹 My Contributions**  
+I worked on **building the AI-driven backend** that powers MediSync’s ability to analyze medical insurance documents and retrieve relevant responses.  
+
+🔹 **Document Processing & Chunking** – Extracted structured data from **PDF and DOCX uploads**  
+🔹 **FAISS-Powered Search** – Implemented **fast vector-based search** for insurance queries  
+🔹 **AI Query Processing** – Built a backend pipeline to match **user queries with relevant clauses**  
+🔹 **Real-Time API Communication** – Ensured seamless integration between **Next.js frontend & AI backend**  
+🔹 **Performance Optimization & Debugging** – Balanced **response speed & accuracy**  
+
+![MediSync AI Query](path-to-another-screenshot.png) *(Replace with actual image)*  
+
+---
+
+## **🔹 Tech Stack**  
+🟢 **Frontend:** Next.js, React, TypeScript  
+🟢 **Backend:** Python (Flask), FAISS, OpenAI API  
+🟢 **Database:** Vector storage with FAISS  
+🟢 **File Processing:** PyPDF2, python-docx  
+🟢 **Deployment:** Node.js, Docker  
+
+---
+
+## **🔹 Getting Started**  
+
+### **1️⃣ Clone the Repository**  
+git clone https://github.com/YourUsername/MediSync.git
+cd MediSync
+
+### **2️⃣ Set Up the Backend**
+
+	1.	Navigate to the backend folder
+cd backend
+	2.	Create a virtual environment & install dependencies
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+	3.	Set your OpenAI API Key
+export OPENAI_API_KEY=“your-api-key”
+	4.	Run the Flask server
+python app.py
+
+### **3️⃣ Set Up the Frontend**
+
+	1.	Navigate to the frontend folder
+cd frontend
+	2.	Install dependencies & run the app
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+	3.	Open your browser at http://localhost:3000 🚀
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
-
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
-
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
-
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
